@@ -208,7 +208,7 @@ export function buildProxyDescription(
   directSpecs: DirectToolSpec[],
 ): string {
   const prefix = config.settings?.toolPrefix ?? "server";
-  let desc = `MCP gateway - connect to MCP servers and call their tools.\n`;
+  let desc = `MCP gateway - connect to MCP servers and call their tools. Non-MCP Pi tools should be called directly, not through mcp.\n`;
 
   const directByServer = new Map<string, number>();
   for (const spec of directSpecs) {
@@ -250,7 +250,7 @@ export function buildProxyDescription(
   desc += `\nUsage:\n`;
   desc += `  mcp({ })                              → Show server status\n`;
   desc += `  mcp({ server: "name" })               → List tools from server\n`;
-  desc += `  mcp({ search: "query" })              → Search for tools (MCP + pi, space-separated words OR'd)\n`;
+  desc += `  mcp({ search: "query" })              → Search MCP tools by name/description\n`;
   desc += `  mcp({ describe: "tool_name" })        → Show tool details and parameters\n`;
   desc += `  mcp({ connect: "server-name" })       → Connect to a server and refresh metadata\n`;
   desc += `  mcp({ tool: "name", args: '{"key": "value"}' })    → Call a tool (args is JSON string)\n`;

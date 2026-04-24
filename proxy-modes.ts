@@ -250,7 +250,6 @@ export function executeSearch(
   regex?: boolean,
   server?: string,
   includeSchemas?: boolean,
-  getPiTools?: () => ToolInfo[]
 ): ProxyToolResult {
   const showSchemas = includeSchemas !== false;
 
@@ -278,21 +277,6 @@ export function executeSearch(
     };
   }
 
-  const piMatches: Array<{ name: string; description: string }> = [];
-  if (!server && getPiTools) {
-    const piTools = getPiTools();
-    for (const tool of piTools) {
-      if (tool.name === "mcp") continue;
-
-      if (pattern.test(tool.name) || pattern.test(tool.description ?? "")) {
-        piMatches.push({
-          name: tool.name,
-          description: tool.description ?? "",
-        });
-      }
-    }
-  }
-
   for (const [serverName, metadata] of state.toolMetadata.entries()) {
     if (server && serverName !== server) continue;
     for (const tool of metadata) {
@@ -305,7 +289,7 @@ export function executeSearch(
     }
   }
 
-  const totalCount = piMatches.length + matches.length;
+  const totalCount = matches.length;
 
   if (totalCount === 0) {
     const msg = server
@@ -318,21 +302,6 @@ export function executeSearch(
   }
 
   let text = `Found ${totalCount} tool${totalCount === 1 ? "" : "s"} matching "${query}":\n\n`;
-
-  for (const match of piMatches) {
-    if (showSchemas) {
-      text += `[pi tool] ${match.name}\n`;
-      text += `  ${match.description || "(no description)"}\n`;
-      text += `  No parameters (call directly).\n`;
-      text += "\n";
-    } else {
-      text += `[pi tool] ${match.name}`;
-      if (match.description) {
-        text += ` - ${truncateAtWord(match.description, 50)}`;
-      }
-      text += "\n";
-    }
-  }
 
   for (const match of matches) {
     if (showSchemas) {
@@ -357,10 +326,7 @@ export function executeSearch(
     content: [{ type: "text" as const, text: text.trim() }],
     details: {
       mode: "search",
-      matches: [
-        ...piMatches.map(m => ({ server: "pi", tool: m.name })),
-        ...matches.map(m => ({ server: m.server, tool: m.tool.name })),
-      ],
+      matches: matches.map(m => ({ server: m.server, tool: m.tool.name })),
       count: totalCount,
       query,
     },
@@ -479,6 +445,7 @@ export async function executeCall(
   toolName: string,
   args?: Record<string, unknown>,
   serverOverride?: string,
+  getPiTools?: () => ToolInfo[],
 ): Promise<ProxyToolResult> {
   let serverName: string | undefined = serverOverride;
   let toolMeta: ToolMetadata | undefined;
@@ -599,6 +566,16 @@ export async function executeCall(
   }
 
   if (!serverName || !toolMeta) {
+    const nativeTool = !serverOverride
+      ? getPiTools?.().find((tool) => tool.name === toolName && tool.name !== "mcp")
+      : undefined;
+    if (nativeTool) {
+      return {
+        content: [{ type: "text" as const, text: `"${toolName}" is a native Pi tool. Call ${toolName} directly instead of using mcp({ tool: "${toolName}" }).` }],
+        details: { mode: "call", error: "native_tool", requestedTool: toolName },
+      };
+    }
+
     const hintServer = serverName ?? prefixMatchedServer;
     const available = hintServer ? getToolNames(state, hintServer) : [];
     let msg = `Tool "${toolName}" not found.`;

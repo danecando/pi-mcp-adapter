@@ -296,7 +296,7 @@ export default function mcpAdapter(pi: ExtensionAPI) {
           return executeUiMessages(state);
         }
         if (params.tool) {
-          return executeCall(state, params.tool, parsedArgs, params.server);
+          return executeCall(state, params.tool, parsedArgs, params.server, getPiTools);
         }
         if (params.connect) {
           return executeConnect(state, params.connect);
@@ -305,7 +305,7 @@ export default function mcpAdapter(pi: ExtensionAPI) {
           return executeDescribe(state, params.describe);
         }
         if (params.search) {
-          return executeSearch(state, params.search, params.regex, params.server, params.includeSchemas, getPiTools);
+          return executeSearch(state, params.search, params.regex, params.server, params.includeSchemas);
         }
         if (params.server) {
           return executeList(state, params.server);
